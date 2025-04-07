@@ -25,12 +25,13 @@ from openai import OpenAIError # For specific error handling
 console = Console()
 
 # Function to create the agent
-def create_basic_agent(instructions: Optional[str] = None) -> Agent:
+def create_basic_agent(model: str, instructions: Optional[str] = None) -> Agent:
     """
-    Creates a basic OpenAI agent instance.
+    Creates a basic OpenAI agent instance using the specified model.
 
     Args:
-        instructions (Optional[str]): Custom instructions for the agent. 
+        model (str): The OpenAI model name to use (e.g., 'gpt-4o-2024-08-06', 'o3-mini-2025-01-31').
+        instructions (Optional[str]): Custom instructions for the agent.
                                        If None, default instructions are used.
 
     Returns:
@@ -45,7 +46,7 @@ def create_basic_agent(instructions: Optional[str] = None) -> Agent:
     return Agent(
         name="ParallelProcessorAssistant",
         instructions=instructions or default_instructions,
-        model="gpt-4o-mini", 
+        model=model, # Use the provided model name
     )
 
 # Function to process a single question file
@@ -96,13 +97,14 @@ async def process_question_file(input_file_path: Path, output_dir_path: Path, ag
 
 
 # Function to process all files in a directory in parallel
-async def process_directory(input_dir_path: Path, output_dir_path: Path):
+async def process_directory(input_dir_path: Path, output_dir_path: Path, model_name: str):
     """
-    Processes all files in the input directory in parallel using the agent.
+    Processes all files in the input directory in parallel using the agent with the specified model.
 
     Args:
         input_dir_path (Path): Path to the directory containing question files.
         output_dir_path (Path): Path to the directory where response files will be saved.
+        model_name (str): The OpenAI model name to use for the agent.
     """
     # Validate input directory
     if not input_dir_path.is_dir():
@@ -115,9 +117,9 @@ async def process_directory(input_dir_path: Path, output_dir_path: Path):
     except OSError as e:
         console.print(Panel(f"[bold red]Error: Could not create output directory '{output_dir_path}': {e}[/bold red]"))
         sys.exit(1)
-        
-    # Create the agent instance
-    agent = create_basic_agent() # Using default instructions for now
+
+    # Create the agent instance using the specified model
+    agent = create_basic_agent(model=model_name) # Pass the model name
 
     tasks = []
     console.print(f"Scanning input directory: {input_dir_path}")
@@ -181,6 +183,13 @@ def main():
         default="output", 
         help="Directory to save the agent's responses (default: ./output)."
     )
+    parser.add_argument(
+        "--model",
+        "-m",
+        type=str,
+        default="o3-mini-2025-01-31", # Default to o3-mini-2025-01-31
+        help="OpenAI model to use (default: o3-mini-2025-01-31)."
+    )
     # Example of adding custom instructions argument:
     # parser.add_argument("--instructions", type=str, default=None, help="Custom instructions file or text for the agent.")
 
@@ -193,10 +202,11 @@ def main():
 
     input_path = Path(args.input_dir).resolve() # Use resolve for absolute path
     output_path = Path(args.output_dir).resolve() # Use resolve for absolute path
+    model_name = args.model # Get the model name from args
 
     try:
-        # Run the main async processing function
-        asyncio.run(process_directory(input_path, output_path))
+        # Run the main async processing function, passing the model name
+        asyncio.run(process_directory(input_path, output_path, model_name))
     except Exception as e:
         # Catch any unexpected errors during async execution setup/teardown
         console.print(Panel(f"[bold red]An unexpected error occurred: {str(e)}[/bold red]"))
