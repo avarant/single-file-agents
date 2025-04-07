@@ -4,7 +4,6 @@ This script (`parallel_agent.py`) processes multiple text files (each containing
 
 ## Requirements
 
--   **Python 3.8+**
 -   **uv**: A fast Python package installer and resolver.
 -   **OpenAI API Key**: You need an API key from OpenAI.
 
